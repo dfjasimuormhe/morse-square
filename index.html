@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Morse Square</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+  </head>
+  <body>
+    <canvas id="gameCanvas" aria-label="Morse Square game"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <div>
+        <strong id="hudMode">MODE</strong>
+        <span id="hudDistance">0</span>
+      </div>
+      <button id="menuButton" class="ghost-button" type="button">Menu</button>
+    </div>
+
+    <section id="titleScreen" class="title-screen">
+      <div class="title-shell">
+        <p class="eyebrow">MORSE PARKOUR</p>
+        <h1>Morse Square</h1>
+        <input
+          id="wordInput"
+          class="word-input"
+          type="text"
+          maxlength="180"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="CUSTOM WORDS"
+        >
+        <div class="mode-grid" aria-label="Mode select">
+          <button type="button" data-mode="easy">Easy</button>
+          <button type="button" data-mode="medium">Medium</button>
+          <button type="button" data-mode="hard">Hard</button>
+          <button type="button" data-mode="classic">Classic</button>
+          <button type="button" data-mode="custom">Custom</button>
+        </div>
+      </div>
+    </section>
+
+    <button id="settingsButton" class="settings-button" type="button" hidden aria-label="Custom settings" title="Custom settings">
+      Settings
+    </button>
+
+    <aside id="settingsPanel" class="settings-panel" hidden>
+      <div class="settings-header">
+        <strong>Custom</strong>
+        <button id="closeSettings" class="ghost-button" type="button">Close</button>
+      </div>
+
+      <label class="text-setting">
+        <span>Words</span>
+        <input id="liveWordInput" type="text" maxlength="180" autocomplete="off" spellcheck="false">
+      </label>
+
+      <div class="setting-row">
+        <label for="dotWidth">Dot width</label>
+        <input id="dotWidth" type="range" min="42" max="96" step="2">
+        <output id="dotWidthOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="dashWidth">Dash width</label>
+        <input id="dashWidth" type="range" min="100" max="190" step="2">
+        <output id="dashWidthOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="easyGap">Easy gap</label>
+        <input id="easyGap" type="range" min="64" max="140" step="2">
+        <output id="easyGapOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="mediumGap">Medium gap</label>
+        <input id="mediumGap" type="range" min="96" max="180" step="2">
+        <output id="mediumGapOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="hardGap">Hard gap</label>
+        <input id="hardGap" type="range" min="130" max="230" step="2">
+        <output id="hardGapOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="iceChance">Ice</label>
+        <input id="iceChance" type="range" min="0" max="0.35" step="0.01">
+        <output id="iceChanceOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="slimeChance">Slime</label>
+        <input id="slimeChance" type="range" min="0" max="0.35" step="0.01">
+        <output id="slimeChanceOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="barChance">Dash bars</label>
+        <input id="barChance" type="range" min="0" max="0.35" step="0.01">
+        <output id="barChanceOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="lowSlimeChance">Low slime</label>
+        <input id="lowSlimeChance" type="range" min="0" max="0.35" step="0.01">
+        <output id="lowSlimeChanceOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="easyWeight">Easy weight</label>
+        <input id="easyWeight" type="range" min="0" max="100" step="1">
+        <output id="easyWeightOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="mediumWeight">Medium weight</label>
+        <input id="mediumWeight" type="range" min="0" max="100" step="1">
+        <output id="mediumWeightOut"></output>
+      </div>
+      <div class="setting-row">
+        <label for="hardWeight">Hard weight</label>
+        <input id="hardWeight" type="range" min="0" max="100" step="1">
+        <output id="hardWeightOut"></output>
+      </div>
+    </aside>
+
+    <script src="game.js?v=2"></script>
+  </body>
+</html>
