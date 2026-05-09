@@ -106,7 +106,8 @@
     slimeBounceVelocity: 610,
     jumpCutMultiplier: 0.45,
     coyoteTime: 0.09,
-    jumpBuffer: 0.12
+    jumpBuffer: 0.12,
+    maxAirJumps: 1
   });
 
   const DEFAULT_SETTINGS = Object.freeze({
@@ -837,6 +838,7 @@
         groundMaterial: "normal",
         coyote: 0,
         jumpBuffer: 0,
+        airJumpsRemaining: PHYSICS.maxAirJumps,
         slimeCooldown: 0
       };
       this.lastSafe = { x: this.player.x, y: this.player.y };
@@ -915,6 +917,7 @@
 
       if (player.grounded) {
         player.coyote = PHYSICS.coyoteTime;
+        player.airJumpsRemaining = PHYSICS.maxAirJumps;
       } else {
         player.coyote = Math.max(0, player.coyote - dt);
       }
@@ -953,6 +956,12 @@
         player.grounded = false;
         player.coyote = 0;
         player.jumpBuffer = 0;
+      } else if (player.jumpBuffer > 0 && player.airJumpsRemaining > 0) {
+        player.vy = -PHYSICS.jumpVelocity;
+        player.grounded = false;
+        player.coyote = 0;
+        player.jumpBuffer = 0;
+        player.airJumpsRemaining -= 1;
       }
 
       if (this.input.consumeJumpReleased() && player.vy < 0) {
@@ -1045,6 +1054,7 @@
           actor.y = player.y;
           if (solid.kind === "platform") {
             this.lastSafe = { x: player.x, y: player.y };
+            player.airJumpsRemaining = PHYSICS.maxAirJumps;
             if (solid.material === "slime" && player.slimeCooldown <= 0) {
               player.vx *= 0.58;
               player.vy = -PHYSICS.slimeBounceVelocity;
@@ -1088,6 +1098,7 @@
       this.player.grounded = false;
       this.player.coyote = 0;
       this.player.jumpBuffer = 0;
+      this.player.airJumpsRemaining = PHYSICS.maxAirJumps;
     }
 
     resetCurrentRun() {
@@ -1118,6 +1129,7 @@
       this.player.groundMaterial = "normal";
       this.player.coyote = 0;
       this.player.jumpBuffer = 0;
+      this.player.airJumpsRemaining = PHYSICS.maxAirJumps;
       this.player.slimeCooldown = 0;
       this.lastSafe = { x: this.player.x, y: this.player.y };
     }
