@@ -38,11 +38,45 @@ class RepeatingPlugin {
 
 function testMorseConversion() {
   assert.strictEqual(wordsToMorseString(["SOS", "ICE"]), "... --- ... / .. -.-. .");
-  const tokens = wordsToMorseTokens(["SOS", "ICE"], { modifiersEnabled: true });
+  const tokens = wordsToMorseTokens(["SOS", { text: "ICE", material: "ice" }], { modifiersEnabled: true });
   assert(tokens.some((token) => token.symbol === "/"), "word separator slash should exist before physical filtering");
   const physical = removeSlashTokens(tokens);
   assert(!physical.some((token) => token.symbol === "/"), "slash tokens should be removed from parkour");
   assert(physical.some((token) => token.sourceWord === "ICE" && token.material === "ice"));
+}
+
+function testTypedModifierWordsStayNormal() {
+  const settings = createModeSettings("custom");
+  settings.iceWordChance = 0;
+  settings.slimeWordChance = 0;
+  settings.lowSlimeChance = 0;
+  const generator = new MorseCourseGenerator({
+    mode: "custom",
+    settings,
+    plugin: new CustomTypedStringPlugin("SLIME ICE SLIME"),
+    seed: hashSeed("typed-modifier-words-normal")
+  });
+  generator.generateChunks(12);
+  const nonStart = generator.platforms.filter((platform) => platform.symbol !== "start");
+  assert(nonStart.length > 0);
+  assert(nonStart.every((platform) => platform.material === "normal"), "typed words named slime or ice should not become modifiers");
+}
+
+function testInjectedSlimeDoesNotTurnEverythingSlime() {
+  const settings = createModeSettings("medium");
+  settings.iceWordChance = 0;
+  settings.slimeWordChance = 1;
+  settings.lowSlimeChance = 0;
+  const generator = new MorseCourseGenerator({
+    mode: "medium",
+    settings,
+    plugin: new CustomTypedStringPlugin("E"),
+    seed: hashSeed("injected-slime-mixed-materials")
+  });
+  generator.generateChunks(8);
+  const nonStart = generator.platforms.filter((platform) => platform.symbol !== "start");
+  assert(nonStart.some((platform) => platform.material === "slime"), "injected slime should still create slime platforms");
+  assert(nonStart.some((platform) => platform.material === "normal"), "source words should remain normal after injected slime");
 }
 
 function testMaterialVisualsMatch() {
@@ -107,11 +141,11 @@ function testMovingBarChanceOnDashes() {
 function testLowSlimeChance() {
   const settings = createModeSettings("medium");
   settings.iceWordChance = 0;
-  settings.slimeWordChance = 0;
+  settings.slimeWordChance = 1;
   const generator = new MorseCourseGenerator({
     mode: "medium",
     settings,
-    plugin: new RepeatingPlugin(["SLIME"]),
+    plugin: new RepeatingPlugin(["E"]),
     seed: hashSeed("low-slime-stats")
   });
   generator.generateChunks(900);
@@ -148,6 +182,8 @@ function testCustomSettingsAffectFuturePlatformsOnly() {
 }
 
 testMorseConversion();
+testTypedModifierWordsStayNormal();
+testInjectedSlimeDoesNotTurnEverythingSlime();
 testMaterialVisualsMatch();
 testClassicHasNoModifiers();
 testGeneratedJumpsAreReachable();

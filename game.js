@@ -284,6 +284,23 @@
     return words.slice(0, 120);
   }
 
+  function normalizeWordEntry(entry) {
+    const rawText = typeof entry === "object" && entry !== null ? entry.text : entry;
+    const words = normalizeWords(rawText);
+    if (words.length === 0) {
+      return null;
+    }
+    const material = typeof entry === "object" && entry !== null ? entry.material : null;
+    return {
+      word: words[0],
+      material: material === "ice" || material === "slime" ? material : "normal"
+    };
+  }
+
+  function modifierWord(text, material) {
+    return { text, material };
+  }
+
   class RandomWordsPlugin {
     constructor() {
       this.id = "randomWords";
@@ -343,7 +360,10 @@
   }
 
   function wordsToMorseString(words) {
-    return normalizeWords(words.join ? words.join(" ") : words)
+    const normalized = Array.isArray(words)
+      ? words.map(normalizeWordEntry).filter(Boolean).map((entry) => entry.word)
+      : normalizeWords(words);
+    return normalized
       .map((word) =>
         word
           .split("")
@@ -356,14 +376,13 @@
   }
 
   function wordsToMorseTokens(words, options) {
-    const normalized = Array.isArray(words) ? words.map(String) : normalizeWords(words);
+    const normalized = Array.isArray(words)
+      ? words.map(normalizeWordEntry).filter(Boolean)
+      : normalizeWords(words).map((word) => ({ word, material: "normal" }));
     const modifiersEnabled = !options || options.modifiersEnabled !== false;
     const tokens = [];
-    normalized.forEach((rawWord, wordIndex) => {
-      const word = rawWord.toUpperCase().replace(/[^A-Z0-9]/g, "");
-      if (!word) {
-        return;
-      }
+    normalized.forEach((entry, wordIndex) => {
+      const word = entry.word;
       if (wordIndex > 0) {
         tokens.push({
           symbol: "/",
@@ -372,7 +391,7 @@
           material: "normal"
         });
       }
-      const material = modifiersEnabled && MATERIAL_WORDS[word] ? MATERIAL_WORDS[word] : "normal";
+      const material = modifiersEnabled ? entry.material : "normal";
       word.split("").forEach((letter) => {
         const code = MORSE_CODE[letter];
         if (!code) {
@@ -569,10 +588,10 @@
       const output = [];
       words.forEach((word) => {
         if (this.rng.chance(this.settings.iceWordChance)) {
-          output.push("ICE");
+          output.push(modifierWord("ICE", "ice"));
         }
         if (this.rng.chance(this.settings.slimeWordChance)) {
-          output.push("SLIME");
+          output.push(modifierWord("SLIME", "slime"));
         }
         output.push(word);
       });
