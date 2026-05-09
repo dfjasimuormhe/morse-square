@@ -1417,11 +1417,12 @@
     document.querySelectorAll("[data-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         const mode = button.getAttribute("data-mode");
-        const text = wordInput.value;
-        const plugin = createPluginFromText(text);
+        const isCustomMode = mode === "custom";
+        const text = isCustomMode ? wordInput.value : "";
+        const plugin = isCustomMode ? createPluginFromText(text) : new RandomWordsPlugin();
         const settings = mode === "custom" ? readPanelSettings() : createModeSettings(mode);
-        const seed = hashSeed(`${mode}|${text}|${Date.now()}`);
-        liveWordInput.value = text;
+        const seed = hashSeed(`${mode}|${isCustomMode ? text : "generated"}|${Date.now()}`);
+        liveWordInput.value = isCustomMode ? text : "";
         titleScreen.hidden = true;
         hud.hidden = false;
         settingsButton.hidden = mode !== "custom";

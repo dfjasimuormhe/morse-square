@@ -97,14 +97,11 @@ h1 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 16px;
-}
-
-.mode-grid button:last-child {
-  grid-column: 1 / -1;
+  margin-top: 6px;
 }
 
 .mode-grid button,
+.custom-launch button,
 .ghost-button,
 .settings-button {
   min-height: 44px;
@@ -120,10 +117,34 @@ h1 {
 }
 
 .mode-grid button:hover,
+.custom-launch button:hover,
 .ghost-button:hover,
 .settings-button:hover {
   border-color: rgba(131, 240, 208, 0.7);
   background: rgba(131, 240, 208, 0.17);
+}
+
+.custom-launch {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(231, 238, 248, 0.16);
+}
+
+.custom-word-select {
+  display: grid;
+  gap: 7px;
+  color: #c9d8e8;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.custom-launch button {
+  width: 100%;
+  color: #071018;
+  font-weight: 900;
+  background: #83f0d0;
 }
 
 .hud {
@@ -253,10 +274,6 @@ h1 {
 
   .mode-grid {
     grid-template-columns: 1fr;
-  }
-
-  .mode-grid button:last-child {
-    grid-column: auto;
   }
 
   .setting-row {

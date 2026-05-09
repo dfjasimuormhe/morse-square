@@ -21,21 +21,26 @@
       <div class="title-shell">
         <p class="eyebrow">MORSE PARKOUR</p>
         <h1>Morse Square</h1>
-        <input
-          id="wordInput"
-          class="word-input"
-          type="text"
-          maxlength="180"
-          autocomplete="off"
-          spellcheck="false"
-          placeholder="CUSTOM WORDS"
-        >
         <div class="mode-grid" aria-label="Mode select">
           <button type="button" data-mode="easy">Easy</button>
           <button type="button" data-mode="medium">Medium</button>
           <button type="button" data-mode="hard">Hard</button>
           <button type="button" data-mode="classic">Classic</button>
-          <button type="button" data-mode="custom">Custom</button>
+        </div>
+        <div class="custom-launch">
+          <label class="custom-word-select">
+            <span>Custom words</span>
+            <input
+              id="wordInput"
+              class="word-input"
+              type="text"
+              maxlength="180"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="TYPE A CUSTOM STRING"
+            >
+          </label>
+          <button type="button" data-mode="custom">Start Custom</button>
         </div>
       </div>
     </section>
@@ -117,6 +122,6 @@
       </div>
     </aside>
 
-    <script src="game.js?v=3"></script>
+    <script src="game.js?v=4"></script>
   </body>
 </html>
