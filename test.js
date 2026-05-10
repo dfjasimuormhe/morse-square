@@ -138,6 +138,53 @@ function testMovingBarChanceOnDashes() {
   assert(rate > 0.038 && rate < 0.064, `moving bar rate ${rate} should be close to 1/20`);
 }
 
+function testCheckpointsEveryTwentyFiveDashes() {
+  const settings = createModeSettings("medium");
+  settings.iceWordChance = 0;
+  settings.slimeWordChance = 0;
+  settings.lowSlimeChance = 0;
+  settings.movingBarChance = 0;
+  const generator = new MorseCourseGenerator({
+    mode: "medium",
+    settings,
+    plugin: new RepeatingPlugin(["T"]),
+    seed: hashSeed("checkpoint-dash-count")
+  });
+  generator.generateChunks(60);
+  assert.strictEqual(generator.mainPath[0].checkpoint, true, "start platform should be the first checkpoint");
+  const dashPlatforms = generator.mainPath.filter((platform) => platform.symbol === "-");
+  assert(dashPlatforms.length >= 150);
+  dashPlatforms.forEach((platform, index) => {
+    const dashNumber = index + 1;
+    if (dashNumber % 25 === 0) {
+      assert.strictEqual(platform.checkpoint, true, `dash ${dashNumber} should be a checkpoint`);
+      assert.strictEqual(platform.checkpointNumber, dashNumber / 25);
+    } else {
+      assert.strictEqual(platform.checkpoint, false, `dash ${dashNumber} should not be a checkpoint`);
+      assert.strictEqual(platform.checkpointNumber, null);
+    }
+  });
+}
+
+function testCheckpointPlatformsAreNeutral() {
+  const settings = createModeSettings("medium");
+  settings.iceWordChance = 0;
+  settings.slimeWordChance = 1;
+  settings.lowSlimeChance = 0;
+  settings.movingBarChance = 0;
+  settings.checkpointDashInterval = 1;
+  const generator = new MorseCourseGenerator({
+    mode: "medium",
+    settings,
+    plugin: new RepeatingPlugin(["T"]),
+    seed: hashSeed("checkpoint-neutral-platforms")
+  });
+  generator.generateChunks(5);
+  const checkpoints = generator.mainPath.filter((platform) => platform.checkpoint && platform.symbol === "-");
+  assert(checkpoints.length > 0);
+  assert(checkpoints.every((platform) => platform.material === "normal"), "checkpoint platforms should be safe neutral respawn spots");
+}
+
 function testLowSlimeChance() {
   const settings = createModeSettings("medium");
   settings.iceWordChance = 0;
@@ -188,6 +235,8 @@ testMaterialVisualsMatch();
 testClassicHasNoModifiers();
 testGeneratedJumpsAreReachable();
 testMovingBarChanceOnDashes();
+testCheckpointsEveryTwentyFiveDashes();
+testCheckpointPlatformsAreNeutral();
 testLowSlimeChance();
 testCustomSettingsAffectFuturePlatformsOnly();
 

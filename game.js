@@ -141,6 +141,7 @@
     movingBarChance: 1 / 20,
     lowSlimeChance: 1 / 15,
     lowSlimeDrop: 112,
+    checkpointDashInterval: 25,
     barWidth: 14,
     barHeight: 92,
     barAmplitude: 38,
@@ -533,6 +534,7 @@
       this.generatedEdge = 0;
       this.chunkIndex = 0;
       this.nextPlatformId = 1;
+      this.dashCount = 0;
       this.reset();
     }
 
@@ -542,6 +544,7 @@
       this.generatedEdge = 0;
       this.chunkIndex = 0;
       this.nextPlatformId = 1;
+      this.dashCount = 0;
       this.rng = new RNG(this.seed);
       this.plugin.reset(this.seed);
 
@@ -556,6 +559,9 @@
         sourceWord: "START",
         sourceLetter: "",
         movingBar: null,
+        checkpoint: true,
+        checkpointNumber: 0,
+        activated: true,
         optional: false,
         main: true,
         difficulty: "easy"
@@ -639,17 +645,21 @@
         this.settings.maxY
       );
       const width = token.symbol === "-" ? this.settings.dashWidth : this.settings.dotWidth;
+      const checkpointNumber = this.getNextCheckpointNumber(token.symbol);
       const platform = {
         id: this.nextPlatformId,
         x: previous.x + previous.width + gap,
         y,
         width,
         height: this.settings.platformHeight,
-        material: token.material,
+        material: checkpointNumber !== null ? "normal" : token.material,
         symbol: token.symbol,
         sourceWord: token.sourceWord,
         sourceLetter: token.sourceLetter,
         movingBar: null,
+        checkpoint: checkpointNumber !== null,
+        checkpointNumber,
+        activated: false,
         optional: false,
         main: true,
         difficulty
@@ -711,6 +721,9 @@
         sourceWord: "SLIME",
         sourceLetter: parent.sourceLetter,
         movingBar: null,
+        checkpoint: false,
+        checkpointNumber: null,
+        activated: false,
         optional: true,
         main: false,
         difficulty: parent.difficulty
@@ -724,6 +737,18 @@
       const keepBehind = Math.max(0, worldLeft);
       this.platforms = this.platforms.filter((platform) => platform.x + platform.width > keepBehind);
       this.mainPath = this.mainPath.filter((platform) => platform.x + platform.width > keepBehind);
+    }
+
+    getNextCheckpointNumber(symbol) {
+      if (symbol !== "-") {
+        return null;
+      }
+      this.dashCount += 1;
+      const interval = Math.max(1, Math.round(this.settings.checkpointDashInterval || 25));
+      if (this.dashCount % interval !== 0) {
+        return null;
+      }
+      return this.dashCount / interval;
     }
   }
 
@@ -819,6 +844,7 @@
       this.player = null;
       this.generator = null;
       this.lastSafe = { x: 80, y: 320 };
+      this.lastCheckpoint = null;
       this.activeRun = null;
       this.highScore = readStoredHighScore();
       this.currentScore = 0;
@@ -893,6 +919,7 @@
         airJumpsRemaining: PHYSICS.maxAirJumps,
         slimeCooldown: 0
       };
+      this.setCheckpointFromPlatform(startPlatform);
       this.lastSafe = { x: this.player.x, y: this.player.y };
       this.state = "playing";
       this.updateHud();
@@ -947,8 +974,10 @@
       const targetGenerationEdge = this.camera.x + this.width * 1.25;
       this.generator.generateUntil(targetGenerationEdge);
       this.updatePlayer(dt);
+      this.updateCheckpointProgress();
       this.updateCamera(dt);
-      this.generator.pruneBefore(this.camera.x - 1200);
+      const checkpointLeft = this.lastCheckpoint ? this.lastCheckpoint.x - 360 : this.camera.x - 1200;
+      this.generator.pruneBefore(Math.min(this.camera.x - 1200, checkpointLeft));
       this.updateHud();
     }
 
@@ -1034,7 +1063,7 @@
 
       const deathFloor = this.generator.settings.maxY + Math.max(180, this.height * 0.35);
       if (player.y > deathFloor) {
-        this.resetCurrentRun();
+        this.respawnAtCheckpoint();
       }
     }
 
@@ -1107,6 +1136,9 @@
           actor.y = player.y;
           if (solid.kind === "platform") {
             this.lastSafe = { x: player.x, y: player.y };
+            if (solid.platform.checkpoint) {
+              this.setCheckpointFromPlatform(solid.platform);
+            }
             player.airJumpsRemaining = PHYSICS.maxAirJumps;
             if (solid.material === "slime" && player.slimeCooldown <= 0) {
               player.vx *= 0.58;
@@ -1154,6 +1186,30 @@
       this.player.airJumpsRemaining = PHYSICS.maxAirJumps;
     }
 
+    respawnAtCheckpoint() {
+      if (!this.lastCheckpoint) {
+        this.resetCurrentRun();
+        return;
+      }
+
+      this.player.x = this.lastCheckpoint.x;
+      this.player.y = this.lastCheckpoint.y;
+      this.player.prevX = this.player.x;
+      this.player.prevY = this.player.y;
+      this.player.vx = 0;
+      this.player.vy = 0;
+      this.player.grounded = false;
+      this.player.groundMaterial = "normal";
+      this.player.coyote = 0;
+      this.player.jumpBuffer = 0;
+      this.player.airJumpsRemaining = PHYSICS.maxAirJumps;
+      this.player.slimeCooldown = 0;
+      this.lastSafe = { x: this.player.x, y: this.player.y };
+      this.camera.x = Math.max(0, this.player.x - this.width * 0.34);
+      this.camera.y = this.player.y - this.height * 0.52;
+      this.generator.generateUntil(this.camera.x + this.width * 1.9);
+    }
+
     resetCurrentRun() {
       if (!this.activeRun) {
         this.respawn();
@@ -1184,7 +1240,38 @@
       this.player.jumpBuffer = 0;
       this.player.airJumpsRemaining = PHYSICS.maxAirJumps;
       this.player.slimeCooldown = 0;
+      this.setCheckpointFromPlatform(startPlatform);
       this.lastSafe = { x: this.player.x, y: this.player.y };
+    }
+
+    updateCheckpointProgress() {
+      if (!this.generator || !this.player) {
+        return;
+      }
+      const playerCenter = this.player.x + PHYSICS.playerSize * 0.5;
+      this.generator.mainPath.forEach((platform) => {
+        if (!platform.checkpoint || platform.checkpointNumber === null) {
+          return;
+        }
+        if (
+          playerCenter >= platform.x &&
+          (!this.lastCheckpoint || platform.checkpointNumber > this.lastCheckpoint.number)
+        ) {
+          this.setCheckpointFromPlatform(platform);
+        }
+      });
+    }
+
+    setCheckpointFromPlatform(platform) {
+      const size = PHYSICS.playerSize;
+      const spawnOffset = Math.min(64, Math.max(8, platform.width - size - 8));
+      this.lastCheckpoint = {
+        id: platform.id,
+        number: platform.checkpointNumber || 0,
+        x: platform.x + spawnOffset,
+        y: platform.y - size
+      };
+      platform.activated = true;
     }
 
     updateHud() {
@@ -1313,6 +1400,30 @@
       roundedRect(ctx, x + 5, y + 4, Math.max(0, width - 10), 3, 2);
       ctx.fill();
       ctx.globalAlpha = 1;
+
+      if (platform.checkpoint) {
+        this.drawCheckpointMarker(ctx, platform, x, y);
+      }
+    }
+
+    drawCheckpointMarker(ctx, platform, x, y) {
+      const poleHeight = 42;
+      const poleX = x + Math.min(platform.width - 16, 18);
+      const poleTop = y - poleHeight;
+      ctx.strokeStyle = platform.activated ? "#83f0d0" : "#ffc35c";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(poleX, y);
+      ctx.lineTo(poleX, poleTop);
+      ctx.stroke();
+
+      ctx.fillStyle = platform.activated ? "#83f0d0" : "#ffc35c";
+      ctx.beginPath();
+      ctx.moveTo(poleX + 2, poleTop + 3);
+      ctx.lineTo(poleX + 28, poleTop + 10);
+      ctx.lineTo(poleX + 2, poleTop + 18);
+      ctx.closePath();
+      ctx.fill();
     }
 
     drawMovingBar(ctx, bar) {
