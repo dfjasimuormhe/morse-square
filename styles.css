@@ -67,10 +67,18 @@ input {
 }
 
 h1 {
-  margin: 0 0 22px;
+  margin: 0 0 10px;
   color: #ffffff;
   font-size: clamp(2.4rem, 8vw, 4.5rem);
   line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.best-score {
+  margin: 0 0 22px;
+  color: #ffc35c;
+  font-size: 1rem;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -175,7 +183,8 @@ h1 {
 }
 
 .hud strong,
-.hud span {
+.hud span,
+.hud small {
   display: block;
 }
 
@@ -190,6 +199,14 @@ h1 {
   color: #f7fbff;
   font-size: 1.1rem;
   font-weight: 800;
+}
+
+.hud small {
+  margin-top: 4px;
+  color: #ffc35c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .ghost-button {

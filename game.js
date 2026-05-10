@@ -80,6 +80,8 @@
     SLIME: "slime"
   });
 
+  const HIGH_SCORE_KEY = "morse-square-high-score";
+
   const PLATFORM_VISUALS = Object.freeze({
     normal: Object.freeze({ fill: "#e7eef8", stroke: "#92c8e6", shine: "#ffffff" }),
     ice: Object.freeze({ fill: "#e7eef8", stroke: "#92c8e6", shine: "#ffffff" }),
@@ -299,6 +301,33 @@
 
   function modifierWord(text, material) {
     return { text, material };
+  }
+
+  function readStoredHighScore() {
+    if (!hasDom) {
+      return 0;
+    }
+    try {
+      const storage = window.localStorage;
+      return Math.max(0, Math.floor(Number(storage.getItem(HIGH_SCORE_KEY)) || 0));
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function writeStoredHighScore(score) {
+    if (!hasDom) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(HIGH_SCORE_KEY, String(Math.max(0, Math.floor(score))));
+    } catch (error) {
+      // Storage can be unavailable in private or locked-down browser contexts.
+    }
+  }
+
+  function formatScore(score) {
+    return `${Math.max(0, Math.floor(score))} M`;
   }
 
   class RandomWordsPlugin {
@@ -791,10 +820,13 @@
       this.generator = null;
       this.lastSafe = { x: 80, y: 320 };
       this.activeRun = null;
+      this.highScore = readStoredHighScore();
+      this.currentScore = 0;
       this.resize = this.resize.bind(this);
       this.loop = this.loop.bind(this);
       window.addEventListener("resize", this.resize);
       this.resize();
+      this.updateHud();
       requestAnimationFrame(this.loop);
     }
 
@@ -830,6 +862,7 @@
       this.seed = seed >>> 0;
       this.time = 0;
       this.accumulator = 0;
+      this.currentScore = 0;
       this.camera = { x: 0, y: 0 };
       const fittedSettings = fitSettingsToViewport(rawSettings, this.height);
       this.activeRun = {
@@ -887,6 +920,7 @@
 
     showTitle() {
       this.state = "title";
+      this.updateHud();
     }
 
     loop(timestamp) {
@@ -1157,8 +1191,20 @@
       if (!this.dom || !this.dom.hudMode) {
         return;
       }
+      const score = this.player ? Math.max(0, Math.floor(this.player.x / 10)) : this.currentScore;
+      this.currentScore = score;
+      if (score > this.highScore) {
+        this.highScore = score;
+        writeStoredHighScore(this.highScore);
+      }
       this.dom.hudMode.textContent = this.mode.toUpperCase();
-      this.dom.hudDistance.textContent = `${Math.max(0, Math.floor(this.player.x / 10))} M`;
+      this.dom.hudDistance.textContent = formatScore(score);
+      if (this.dom.hudBest) {
+        this.dom.hudBest.textContent = `BEST ${formatScore(this.highScore)}`;
+      }
+      if (this.dom.titleBest) {
+        this.dom.titleBest.textContent = `Best ${formatScore(this.highScore)}`;
+      }
     }
 
     render() {
@@ -1324,7 +1370,9 @@
     const liveWordInput = document.getElementById("liveWordInput");
     const dom = {
       hudMode: document.getElementById("hudMode"),
-      hudDistance: document.getElementById("hudDistance")
+      hudDistance: document.getElementById("hudDistance"),
+      hudBest: document.getElementById("hudBest"),
+      titleBest: document.getElementById("titleBest")
     };
     const game = new MorseSquareGame(canvas, dom);
     const customSettings = createModeSettings("custom");
